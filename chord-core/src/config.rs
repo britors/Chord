@@ -34,7 +34,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             theme: "chord-dark".to_string(),
-            background_opacity_percent: 95,
+            background_opacity_percent: 100,
             cursor_blink: true,
             font: "JetBrains Mono".to_string(),
             font_size: 11,

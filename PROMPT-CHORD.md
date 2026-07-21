@@ -107,7 +107,7 @@ Como o projeto roda tanto em GNOME (onde GSettings é o padrão natural) quanto 
 
 | Elemento | Token |
 |---|---|
-| Fundo | `lyra-night` (#0D0D1F), transparência configurável (0-100%, padrão 95% opaco) |
+| Fundo | `lyra-night` (#16191D), transparência configurável (0-100%, padrão 100% opaco) |
 | Texto padrão | `lyra-star` (#E8ECFF) |
 | Cursor | `lyra-neon` (#A78BFA), piscante por padrão |
 | Seleção | `lyra-sapphire` (#2D5BE3) a 40% de opacidade |

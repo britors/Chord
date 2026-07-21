@@ -1,12 +1,12 @@
 {
   "name": "Chord Dark",
-  "background": "#0D0D1F",
+  "background": "#16191D",
   "foreground": "#E8ECFF",
   "cursor": "#A78BFA",
   "cursor_blink": true,
   "selection": "#2D5BE3",
   "selection_opacity_percent": 40,
-  "background_opacity_percent": 95,
+  "background_opacity_percent": 100,
   "ansi": {
     "black": "#1A1A2E",
     "red": "#FF5C8A",

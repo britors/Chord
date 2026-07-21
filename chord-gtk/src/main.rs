@@ -5,15 +5,16 @@ mod tab_bar;
 mod terminal_pane;
 mod window;
 
-use gtk4::prelude::*;
+use adw::prelude::*;
 
 const APP_ID: &str = "org.lyraos.Chord";
 
 fn main() -> gtk4::glib::ExitCode {
     chord_core::i18n::init("/usr/share/locale");
 
-    let app = gtk4::Application::builder().application_id(APP_ID).build();
+    let app = adw::Application::builder().application_id(APP_ID).build();
 
+    app.connect_startup(|_| adw::StyleManager::default().set_color_scheme(adw::ColorScheme::Default));
     window::register_accels(&app);
     app.connect_activate(|app| {
         let config = chord_core::Config::load().unwrap_or_default();

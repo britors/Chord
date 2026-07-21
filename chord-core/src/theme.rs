@@ -103,7 +103,7 @@ pub struct Theme {
     pub selection: Color,
     /// Selection highlight opacity, 0-100 (percent).
     pub selection_opacity_percent: u8,
-    /// Background opacity, 0-100 (percent opaque). Spec default: 95.
+    /// Background opacity, 0-100 (percent opaque). Spec default: 100.
     pub background_opacity_percent: u8,
     pub ansi: AnsiPalette,
 }
@@ -121,13 +121,13 @@ impl Theme {
     pub fn chord_dark() -> Self {
         Self {
             name: "Chord Dark".to_string(),
-            background: Color::new("#0D0D1F"), // lyra-night
+            background: Color::new("#16191D"), // lyra-night
             foreground: Color::new("#E8ECFF"),  // lyra-star
             cursor: Color::new("#A78BFA"),      // lyra-neon
             cursor_blink: true,
             selection: Color::new("#2D5BE3"), // lyra-sapphire
             selection_opacity_percent: 40,
-            background_opacity_percent: 95,
+            background_opacity_percent: 100,
             ansi: AnsiPalette {
                 black: Color::new("#1A1A2E"),
                 red: Color::new("#FF5C8A"),

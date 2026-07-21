@@ -3,16 +3,16 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use adw::prelude::*;
 use chord_core::i18n::tr;
 use chord_core::{Config, Theme};
-use gtk4::prelude::*;
 use vte4::prelude::*;
 
 use crate::tab_bar;
 use crate::terminal_pane::TerminalPane;
 
 /// Registers the app-wide accelerators for every `win.*` action (PROMPT-CHORD.md §3.1).
-pub fn register_accels(app: &gtk4::Application) {
+pub fn register_accels(app: &adw::Application) {
     app.set_accels_for_action("win.new-tab", &["<Ctrl><Shift>t"]);
     app.set_accels_for_action("win.close-tab", &["<Ctrl><Shift>w"]);
     app.set_accels_for_action("win.next-tab", &["<Ctrl>Tab"]);
@@ -39,7 +39,7 @@ struct WindowState {
     focused: Rc<RefCell<Option<vte4::Terminal>>>,
 }
 
-pub fn build_window(app: &gtk4::Application, config: &Config) -> gtk4::ApplicationWindow {
+pub fn build_window(app: &adw::Application, config: &Config) -> adw::ApplicationWindow {
     let theme = Rc::new(Theme::chord_dark());
     let config = Rc::new(config.clone());
 
@@ -64,20 +64,28 @@ pub fn build_window(app: &gtk4::Application, config: &Config) -> gtk4::Applicati
         focused: Rc::new(RefCell::new(None)),
     };
 
-    let header = gtk4::HeaderBar::new();
+    // Standard GNOME/libadwaita window chrome (same pattern as Vega): an
+    // `AdwHeaderBar` stacked above the content in a plain box, set as the
+    // window's `content` rather than via `set_titlebar`. This gives the
+    // normal opaque GNOME headerbar instead of the plain GTK4 `HeaderBar`,
+    // which some Wayland compositors render with a translucent backdrop.
+    let header_bar = adw::HeaderBar::new();
     let new_tab_button = gtk4::Button::from_icon_name("tab-new-symbolic");
     new_tab_button.set_action_name(Some("win.new-tab"));
     new_tab_button.set_tooltip_text(Some(&tr("New tab")));
-    header.pack_start(&new_tab_button);
+    header_bar.pack_start(&new_tab_button);
 
-    let window = gtk4::ApplicationWindow::builder()
+    let root = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+    root.append(&header_bar);
+    root.append(&content);
+
+    let window = adw::ApplicationWindow::builder()
         .application(app)
         .title("Chord")
         .default_width(960)
         .default_height(600)
+        .content(&root)
         .build();
-    window.set_titlebar(Some(&header));
-    window.set_child(Some(&content));
 
     install_actions(&window, &state);
     wire_search(&state);
@@ -88,7 +96,7 @@ pub fn build_window(app: &gtk4::Application, config: &Config) -> gtk4::Applicati
     window
 }
 
-fn install_actions(window: &gtk4::ApplicationWindow, state: &WindowState) {
+fn install_actions(window: &adw::ApplicationWindow, state: &WindowState) {
     let action = |name: &str, state: WindowState, f: fn(&WindowState)| {
         let action = gtk4::gio::SimpleAction::new(name, None);
         action.connect_activate(move |_, _| f(&state));
