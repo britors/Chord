@@ -1,0 +1,28 @@
+{
+  "name": "Chord Dark",
+  "background": "#0D0D1F",
+  "foreground": "#E8ECFF",
+  "cursor": "#A78BFA",
+  "cursor_blink": true,
+  "selection": "#2D5BE3",
+  "selection_opacity_percent": 40,
+  "background_opacity_percent": 95,
+  "ansi": {
+    "black": "#1A1A2E",
+    "red": "#FF5C8A",
+    "green": "#4ADE80",
+    "yellow": "#FBBF24",
+    "blue": "#2D5BE3",
+    "magenta": "#A78BFA",
+    "cyan": "#38BDF8",
+    "white": "#E8ECFF",
+    "bright_black": "#4B4B6B",
+    "bright_red": "#FF7FA3",
+    "bright_green": "#6EE7A0",
+    "bright_yellow": "#FCD34D",
+    "bright_blue": "#5B7FFF",
+    "bright_magenta": "#C4B5FD",
+    "bright_cyan": "#7DD3FC",
+    "bright_white": "#FFFFFF"
+  }
+}

@@ -1,0 +1,82 @@
+<svg width="600" height="600" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1B1B36"/>
+      <stop offset="55%" stop-color="#13132A"/>
+      <stop offset="100%" stop-color="#0D0D1F"/>
+    </linearGradient>
+    <linearGradient id="cardCurl" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#C4B5FD"/>
+      <stop offset="100%" stop-color="#6D4FE0"/>
+    </linearGradient>
+    <linearGradient id="fold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2A2A4C"/>
+      <stop offset="100%" stop-color="#1B1B36"/>
+    </linearGradient>
+    <linearGradient id="stringGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7DD3FC"/>
+      <stop offset="45%" stop-color="#A78BFA"/>
+      <stop offset="100%" stop-color="#2D5BE3"/>
+    </linearGradient>
+    <linearGradient id="stringShine" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="pluckGlow" cx="50%" cy="35%" r="75%">
+      <stop offset="0%" stop-color="#E8ECFF"/>
+      <stop offset="100%" stop-color="#A78BFA"/>
+    </radialGradient>
+    <filter id="softShadow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#A78BFA" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Same glyph as the full logo, without the wordmark: recentered and
+       enlarged to read clearly at small taskbar/app-grid sizes. -->
+  <g transform="translate(300,300) scale(1.42) translate(-334,-234)">
+    <g filter="url(#softShadow)">
+      <path d="M198,112
+               Q198,98 212,98
+               L338,98
+               L382,142
+               L382,344
+               Q382,358 368,358
+               L212,358
+               Q198,358 198,344
+               Z"
+            fill="url(#cardGrad)" stroke="#33335C" stroke-width="2"/>
+      <path d="M338,98 L382,142 L350,142 Q338,142 338,130 Z" fill="url(#fold)"/>
+
+      <path d="M198,300
+               C 214,330 214,344 198,358
+               L 236,358
+               C 244,336 244,318 226,300
+               Z"
+            fill="url(#cardCurl)"/>
+
+      <g fill="#5A5A82">
+        <circle cx="222" cy="120" r="5"/>
+        <circle cx="240" cy="120" r="5"/>
+        <circle cx="258" cy="120" r="5"/>
+      </g>
+
+      <g fill="#E8ECFF">
+        <path d="M228,180 L248,192 L228,204 Z"/>
+        <rect x="258" y="182" width="60" height="10" rx="2"/>
+        <rect x="228" y="210" width="22" height="14" rx="2"/>
+      </g>
+
+      <g transform="rotate(-14 400 300)">
+        <rect x="352" y="272" width="20" height="96" rx="10" fill="url(#stringGrad)"/>
+        <rect x="394" y="226" width="20" height="142" rx="10" fill="url(#stringGrad)"/>
+        <rect x="436" y="172" width="20" height="196" rx="10" fill="url(#stringGrad)"/>
+        <rect x="352" y="272" width="7" height="96" rx="3.5" fill="url(#stringShine)"/>
+        <rect x="394" y="226" width="7" height="142" rx="3.5" fill="url(#stringShine)"/>
+        <rect x="436" y="172" width="7" height="196" rx="3.5" fill="url(#stringShine)"/>
+        <circle cx="362" cy="372" r="8" fill="url(#pluckGlow)"/>
+        <circle cx="404" cy="372" r="8" fill="url(#pluckGlow)"/>
+        <circle cx="446" cy="372" r="8" fill="url(#pluckGlow)"/>
+      </g>
+    </g>
+  </g>
+</svg>

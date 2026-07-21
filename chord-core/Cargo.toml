@@ -1,0 +1,16 @@
+[package]
+name = "chord-core"
+description = "Shared, UI-agnostic core logic for the Chord terminal emulator (theme, profiles, config, i18n)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+toml.workspace = true
+thiserror.workspace = true
+dirs = "6"
+gettext-rs = { version = "0.7", features = ["gettext-system"] }
