@@ -1,6 +1,7 @@
 //! The Chord window: tabs, splits, and the v1 shortcuts (PROMPT-CHORD.md §3.1).
 
 use std::cell::{Cell, RefCell};
+use std::os::fd::AsRawFd;
 use std::rc::Rc;
 
 use adw::prelude::*;
@@ -14,8 +15,8 @@ use crate::terminal_pane::TerminalPane;
 
 /// Registers the app-wide accelerators for every `win.*` action (PROMPT-CHORD.md §3.1).
 pub fn register_accels(app: &adw::Application) {
-    app.set_accels_for_action("win.new-tab", &["<Ctrl><Shift>t"]);
-    app.set_accels_for_action("win.close-tab", &["<Ctrl><Shift>w"]);
+    app.set_accels_for_action("win.new-tab", &["<Ctrl>n"]);
+    app.set_accels_for_action("win.close-tab", &["<Ctrl>F4"]);
     app.set_accels_for_action("win.next-tab", &["<Ctrl>Tab"]);
     app.set_accels_for_action("win.prev-tab", &["<Ctrl><Shift>Tab"]);
     app.set_accels_for_action("win.split-horizontal", &["<Ctrl><Shift>o"]);
@@ -39,6 +40,7 @@ struct WindowState {
     theme: Rc<Theme>,
     config: Rc<RefCell<Config>>,
     focused: Rc<RefCell<Option<vte4::Terminal>>>,
+    focused_shell_pid: Rc<RefCell<Option<Rc<Cell<Option<i32>>>>>>,
     closing_tab: Rc<Cell<bool>>,
 }
 
@@ -66,6 +68,7 @@ pub fn build_window(app: &adw::Application, config: &Config) -> adw::Application
         theme,
         config,
         focused: Rc::new(RefCell::new(None)),
+        focused_shell_pid: Rc::new(RefCell::new(None)),
         closing_tab: Rc::new(Cell::new(false)),
     };
 
@@ -263,12 +266,14 @@ fn find_terminal(widget: &gtk4::Widget) -> Option<vte4::Terminal> {
 
 /// Tracks focus-enter on `terminal` so window-level actions (copy, split, search, zoom)
 /// always apply to whichever pane the user last interacted with.
-fn track_focus(terminal: &vte4::Terminal, state: &WindowState) {
+fn track_focus(terminal: &vte4::Terminal, shell_pid: Rc<Cell<Option<i32>>>, state: &WindowState) {
     let controller = gtk4::EventControllerFocus::new();
     let terminal_for_focus = terminal.clone();
     let focused = state.focused.clone();
+    let focused_shell_pid = state.focused_shell_pid.clone();
     controller.connect_enter(move |_| {
         *focused.borrow_mut() = Some(terminal_for_focus.clone());
+        *focused_shell_pid.borrow_mut() = Some(shell_pid.clone());
     });
     terminal.add_controller(controller);
 
@@ -279,14 +284,14 @@ fn track_focus(terminal: &vte4::Terminal, state: &WindowState) {
         }
 
         if state.notebook.n_pages() > 1 {
-            if let Some(page) = notebook_page_for(terminal, &state.notebook) {
-                if let Some(page_num) = state.notebook.page_num(&page) {
-                    state.notebook.remove_page(Some(page_num));
-                    let closing_tab = state.closing_tab.clone();
-                    gtk4::glib::idle_add_local_once(move || closing_tab.set(false));
-                    return;
-                }
-            }
+            let page_num = notebook_page_for(terminal, &state.notebook)
+                .and_then(|page| state.notebook.page_num(&page))
+                .or_else(|| state.notebook.current_page());
+
+            state.notebook.remove_page(page_num);
+            let closing_tab = state.closing_tab.clone();
+            gtk4::glib::idle_add_local_once(move || closing_tab.set(false));
+            return;
         }
 
         state.app.quit();
@@ -315,7 +320,7 @@ fn add_tab(state: &WindowState) {
         .cloned()
         .unwrap_or_default();
     let pane = TerminalPane::new(&profile, &state.theme, &state.config.borrow());
-    track_focus(&pane.terminal, state);
+    track_focus(&pane.terminal, pane.shell_pid.clone(), state);
 
     let (label, close_button) = tab_bar::build_tab_label(&profile.name);
     let notebook = state.notebook.clone();
@@ -333,9 +338,65 @@ fn add_tab(state: &WindowState) {
 }
 
 fn close_current_tab(state: &WindowState) {
-    if let Some(page_num) = state.notebook.current_page() {
+    let Some(page_num) = state.notebook.current_page() else {
+        return;
+    };
+
+    if foreground_command_is_running(state) {
+        let dialog = adw::AlertDialog::new(
+            Some(&tr("Close this tab?")),
+            Some(&tr(
+                "A command is still running. Closing the tab will stop it.",
+            )),
+        );
+        dialog.add_response("cancel", &tr("Cancel"));
+        dialog.add_response("close", &tr("Close tab"));
+        dialog.set_close_response("cancel");
+        dialog.set_default_response(Some("cancel"));
+        dialog.set_response_appearance("close", adw::ResponseAppearance::Destructive);
+
+        let notebook = state.notebook.clone();
+        let app = state.app.clone();
+        let page = state.notebook.nth_page(Some(page_num));
+        dialog.connect_response(None, move |_, response| {
+            if response == "close" {
+                if notebook.n_pages() == 1 {
+                    app.quit();
+                } else if let Some(page_num) =
+                    page.as_ref().and_then(|page| notebook.page_num(page))
+                {
+                    notebook.remove_page(Some(page_num));
+                }
+            }
+        });
+        dialog.present(Some(&state.notebook));
+    } else if state.notebook.n_pages() == 1 {
+        state.app.quit();
+    } else {
         state.notebook.remove_page(Some(page_num));
     }
+}
+
+fn foreground_command_is_running(state: &WindowState) -> bool {
+    let Some(terminal) = state.focused.borrow().clone() else {
+        return false;
+    };
+    let Some(shell_pid) = state
+        .focused_shell_pid
+        .borrow()
+        .as_ref()
+        .and_then(|pid| pid.get())
+    else {
+        return false;
+    };
+    let Some(pty) = terminal.pty() else {
+        return false;
+    };
+
+    // SAFETY: tcgetpgrp only reads the foreground process group associated with
+    // this valid, borrowed PTY file descriptor.
+    let foreground_pid = unsafe { libc::tcgetpgrp(pty.fd().as_raw_fd()) };
+    foreground_pid > 0 && foreground_pid != shell_pid
 }
 
 /// Splits the pane containing the focused terminal, placing a freshly spawned terminal
@@ -362,7 +423,7 @@ fn split_focused(state: &WindowState, orientation: gtk4::Orientation) {
         .cloned()
         .unwrap_or_default();
     let new_pane = TerminalPane::new(&profile, &state.theme, &state.config.borrow());
-    track_focus(&new_pane.terminal, state);
+    track_focus(&new_pane.terminal, new_pane.shell_pid.clone(), state);
 
     if let Some(notebook) = container.clone().downcast::<gtk4::Notebook>().ok() {
         let page_num = notebook.page_num(&old_root);

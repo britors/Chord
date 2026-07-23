@@ -46,8 +46,8 @@ The main shortcuts are:
 
 | Action | Shortcut |
 |---|---|
-| New tab | `Ctrl+Shift+T` |
-| Close tab | `Ctrl+Shift+W` |
+| New tab | `Ctrl+N` |
+| Close tab | `Ctrl+F4` |
 | Next/previous tab | `Ctrl+Tab` / `Ctrl+Shift+Tab` |
 | Horizontal/vertical split | `Ctrl+Shift+O` / `Ctrl+Shift+E` |
 | Copy/paste | `Ctrl+Shift+C` / `Ctrl+Shift+V` |

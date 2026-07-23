@@ -12,6 +12,7 @@ use vte4::prelude::*;
 pub struct TerminalPane {
     pub terminal: vte4::Terminal,
     pub root: gtk4::ScrolledWindow,
+    pub shell_pid: Rc<Cell<Option<i32>>>,
 }
 
 impl TerminalPane {
@@ -20,7 +21,7 @@ impl TerminalPane {
         terminal.set_scrollback_lines(10_000);
         terminal.set_bold_is_bright(true);
         apply_config(&terminal, theme, config);
-        spawn_shell(&terminal, profile);
+        let shell_pid = spawn_shell(&terminal, profile);
 
         let root = gtk4::ScrolledWindow::builder()
             .hscrollbar_policy(gtk4::PolicyType::Never)
@@ -29,7 +30,11 @@ impl TerminalPane {
             .child(&terminal)
             .build();
 
-        Self { terminal, root }
+        Self {
+            terminal,
+            root,
+            shell_pid,
+        }
     }
 }
 
@@ -78,9 +83,11 @@ pub fn apply_theme(terminal: &vte4::Terminal, theme: &Theme) {
 }
 
 /// Spawns `profile`'s shell command asynchronously inside `terminal`'s PTY.
-fn spawn_shell(terminal: &vte4::Terminal, profile: &ShellProfile) {
+fn spawn_shell(terminal: &vte4::Terminal, profile: &ShellProfile) -> Rc<Cell<Option<i32>>> {
     let mut argv: Vec<&str> = vec![profile.command.as_str()];
     argv.extend(profile.args.iter().map(String::as_str));
+    let shell_pid = Rc::new(Cell::new(None));
+    let shell_pid_for_spawn = shell_pid.clone();
 
     terminal.spawn_async(
         vte4::PtyFlags::DEFAULT,
@@ -91,10 +98,14 @@ fn spawn_shell(terminal: &vte4::Terminal, profile: &ShellProfile) {
         || {},
         -1,
         gtk4::gio::Cancellable::NONE,
-        |result| {
-            if let Err(err) = result {
+        move |result| match result {
+            Ok(pid) => shell_pid_for_spawn.set(Some(pid.0)),
+            Err(err) => {
                 eprintln!("chord-gtk: failed to spawn shell: {err}");
             }
         },
     );
+    shell_pid
 }
+use std::cell::Cell;
+use std::rc::Rc;

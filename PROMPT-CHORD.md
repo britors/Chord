@@ -94,7 +94,7 @@ Como o projeto roda tanto em GNOME (onde GSettings é o padrão natural) quanto 
 
 ### 3.1 Essenciais (v1)
 
-- **Abas** — múltiplas sessões de shell na mesma janela (`Ctrl+Shift+T` nova aba, `Ctrl+Shift+W` fechar, `Ctrl+Tab`/`Ctrl+Shift+Tab` navegar)
+- **Abas** — múltiplas sessões de shell na mesma janela (`Ctrl+N` nova aba, `Ctrl+F4` fechar com confirmação se houver processo ativo, `Ctrl+Tab`/`Ctrl+Shift+Tab` navegar)
 - **Divisão de painel** — split horizontal e vertical na mesma aba (`Ctrl+Shift+O` horizontal, `Ctrl+Shift+E` vertical)
 - **Cópia/colagem** — `Ctrl+Shift+C`/`Ctrl+Shift+V`
 - **Busca no scrollback** — `Ctrl+Shift+F`, com realce de resultados

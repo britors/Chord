@@ -99,6 +99,7 @@ dependencies = [
  "glib",
  "gtk4",
  "libadwaita",
+ "libc",
  "vte4",
 ]
 
