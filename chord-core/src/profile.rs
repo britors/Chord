@@ -12,14 +12,14 @@ pub struct ShellProfile {
 }
 
 impl ShellProfile {
-    /// The default profile: the user's `$SHELL`, rendered in the spec's default font
-    /// (JetBrains Mono, per §3.2).
+    /// The default profile: the user's `$SHELL`, rendered with the system's configured
+    /// monospace font.
     pub fn default_for_system() -> Self {
         Self {
             name: "Default".to_string(),
             command: detect_default_shell(),
             args: Vec::new(),
-            font: "JetBrains Mono".to_string(),
+            font: "Monospace".to_string(),
             font_size: 11,
         }
     }

@@ -1,10 +1,10 @@
-# PROMPT DE IMPLEMENTAÇÃO — CHORD (TERMINAL DO LYRA OS)
+# PROMPT DE IMPLEMENTAÇÃO — CHORD (TERMINAL DO LYRA ENTERPRISE LINUX)
 
 > **Versão:** 2.0
 > **Status:** Especificação de build congelada, pronta para implementação
 > **Supersede:** `PROMPT-CORDA.md` v1.0 — projeto renomeado de **Corda** para **Chord**, e arquitetura revisada para núcleo compartilhado entre os frontends GTK4 e Qt (antes só GTK4 estava especificado).
 > **Pré-requisitos:** `PROMPT-LYRA-IDENTIDADE.md` v1.0 (paleta, tokens visuais)
-> **Escopo:** Emulador de terminal do ecossistema Lyra, com dois frontends nativos (GTK4 para GNOME, Qt para KDE) compartilhando um núcleo Rust único. Todas as decisões abaixo estão fechadas.
+> **Escopo:** Emulador de terminal do ecossistema Lyra Enterprise Linux, com dois frontends nativos (GTK4 para GNOME, Qt para KDE) compartilhando um núcleo Rust único. Todas as decisões abaixo estão fechadas.
 
 ---
 
@@ -107,14 +107,15 @@ Como o projeto roda tanto em GNOME (onde GSettings é o padrão natural) quanto 
 
 | Elemento | Token |
 |---|---|
-| Fundo | `lyra-night` (#16191D), transparência configurável (0-100%, padrão 100% opaco) |
+| Fundo | `lyra-slate` (#16191D), transparência configurável (0-100%, padrão 95% opaco) |
+| Fundo secundário (painéis/split) | `lyra-slate-alt` (#1C2025) |
 | Texto padrão | `lyra-star` (#E8ECFF) |
-| Cursor | `lyra-neon` (#A78BFA), piscante por padrão |
-| Seleção | `lyra-sapphire` (#2D5BE3) a 40% de opacidade |
-| Paleta ANSI (16 cores) | Gerada por `chord-core::theme` a partir de `palette.json` — ver `data/themes/chord-dark.json` como artefato derivado, nunca hardcoded solto em cada frontend |
+| Cursor | `lyra-mist` (#262B3D), cor sólida discreta |
+| Seleção | `lyra-mist` (#262B3D) a 40% de opacidade |
+| Paleta ANSI (16 cores) | Gerada por `chord-core::theme` a partir de `palette.json`, com tons dessaturados — ver `data/themes/chord-dark.json` como artefato derivado, nunca hardcoded nos frontends |
 
 - **Temas alternativos:** suporte a formato compatível com os já populares (base16/iTerm) — permite trazer Catppuccin, Nord, Dracula, Tokyo Night sem esforço de conversão manual. O parser de tema externo vive em `chord-core`, então funciona identicamente nos dois frontends
-- **Fonte padrão:** `JetBrains Mono` (boa legibilidade, ligaduras opcionais, licença livre)
+- **Fonte padrão:** fonte monoespaçada configurada no sistema (`Monospace`)
 
 ### 3.3 Fora do v1
 
@@ -130,18 +131,18 @@ Seguindo o padrão multi-distro já validado com Vega e Lyra Tour:
 
 | Canal | Distro |
 |---|---|
-| Pacote de sistema/repositório próprio do ecossistema | Fedora (base atual do Lyra OS) |
+| Pacote de sistema/repositório próprio do ecossistema | Fedora (base atual do Lyra Enterprise Linux) |
 | AUR (`lyra-chord`) | Arch |
 | RPM (openSUSE, se retomado no futuro) | openSUSE |
 
-- Dois sub-pacotes gerados a partir do mesmo repositório: `lyra-chord-gtk` (dependência do meta-pacote GNOME do Lyra OS) e `lyra-chord-qt` (dependência do meta-pacote KDE, quando essa variante existir)
+- Dois sub-pacotes gerados a partir do mesmo repositório: `lyra-chord-gtk` (dependência do meta-pacote GNOME do Lyra Enterprise Linux) e `lyra-chord-qt` (dependência do meta-pacote KDE, quando essa variante existir)
 - Desktop entries (`org.lyraos.Chord.desktop` para cada frontend) incluem `Terminal=false` e categoria `System;TerminalEmulator;`
 
 ---
 
 ## 5. Integração com o Sistema
 
-- **Terminal padrão do Lyra OS (edição GNOME):** já definido como GNOME Terminal por enquanto (decisão registrada separadamente) — o Chord é candidato a substituir isso quando estiver maduro o suficiente; não assumir substituição automática nesta especificação
+- **Terminal padrão do Lyra Enterprise Linux (edição GNOME):** já definido como GNOME Terminal por enquanto (decisão registrada separadamente) — o Chord é candidato a substituir isso quando estiver maduro o suficiente; não assumir substituição automática nesta especificação
 - **Vega:** módulos que mostram output técnico podem oferecer "Abrir no Chord" como ação futura — não implementado nesta versão
 
 ---

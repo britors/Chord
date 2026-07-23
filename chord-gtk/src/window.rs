@@ -8,6 +8,7 @@ use chord_core::i18n::tr;
 use chord_core::{Config, Theme};
 use vte4::prelude::*;
 
+use crate::settings;
 use crate::tab_bar;
 use crate::terminal_pane::TerminalPane;
 
@@ -31,17 +32,18 @@ pub fn register_accels(app: &adw::Application) {
 /// copy/paste, search and zoom actions apply to.
 #[derive(Clone)]
 struct WindowState {
+    app: adw::Application,
     notebook: gtk4::Notebook,
     search_bar: gtk4::SearchBar,
     search_entry: gtk4::SearchEntry,
     theme: Rc<Theme>,
-    config: Rc<Config>,
+    config: Rc<RefCell<Config>>,
     focused: Rc<RefCell<Option<vte4::Terminal>>>,
 }
 
 pub fn build_window(app: &adw::Application, config: &Config) -> adw::ApplicationWindow {
     let theme = Rc::new(Theme::chord_dark());
-    let config = Rc::new(config.clone());
+    let config = Rc::new(RefCell::new(config.clone()));
 
     let notebook = gtk4::Notebook::builder().scrollable(true).build();
 
@@ -56,6 +58,7 @@ pub fn build_window(app: &adw::Application, config: &Config) -> adw::Application
     content.append(&notebook);
 
     let state = WindowState {
+        app: app.clone(),
         notebook: notebook.clone(),
         search_bar,
         search_entry,
@@ -74,6 +77,16 @@ pub fn build_window(app: &adw::Application, config: &Config) -> adw::Application
     new_tab_button.set_action_name(Some("win.new-tab"));
     new_tab_button.set_tooltip_text(Some(&tr("New tab")));
     header_bar.pack_start(&new_tab_button);
+
+    let menu = gtk4::gio::Menu::new();
+    menu.append(Some(&tr("Settings")), Some("win.settings"));
+    menu.append(Some(&tr("About Chord")), Some("win.about"));
+    let menu_button = gtk4::MenuButton::builder()
+        .icon_name("open-menu-symbolic")
+        .tooltip_text(tr("Main menu"))
+        .menu_model(&menu)
+        .build();
+    header_bar.pack_end(&menu_button);
 
     let root = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
     root.append(&header_bar);
@@ -104,9 +117,15 @@ fn install_actions(window: &adw::ApplicationWindow, state: &WindowState) {
     };
 
     window.add_action(&action("new-tab", state.clone(), |s| add_tab(s)));
-    window.add_action(&action("close-tab", state.clone(), |s| close_current_tab(s)));
-    window.add_action(&action("next-tab", state.clone(), |s| s.notebook.next_page()));
-    window.add_action(&action("prev-tab", state.clone(), |s| s.notebook.prev_page()));
+    window.add_action(&action("close-tab", state.clone(), |s| {
+        close_current_tab(s)
+    }));
+    window.add_action(&action("next-tab", state.clone(), |s| {
+        s.notebook.next_page()
+    }));
+    window.add_action(&action("prev-tab", state.clone(), |s| {
+        s.notebook.prev_page()
+    }));
     window.add_action(&action("split-horizontal", state.clone(), |s| {
         split_focused(s, gtk4::Orientation::Horizontal)
     }));
@@ -137,6 +156,37 @@ fn install_actions(window: &adw::ApplicationWindow, state: &WindowState) {
             t.set_font_scale(1.0);
         }
     }));
+
+    let settings_action = gtk4::gio::SimpleAction::new("settings", None);
+    let window_for_settings = window.clone();
+    let state_for_settings = state.clone();
+    settings_action.connect_activate(move |_, _| {
+        settings::show(
+            &window_for_settings,
+            state_for_settings.config.clone(),
+            state_for_settings.theme.clone(),
+            state_for_settings.notebook.clone(),
+        );
+    });
+    window.add_action(&settings_action);
+
+    let about_action = gtk4::gio::SimpleAction::new("about", None);
+    let window_for_about = window.clone();
+    about_action.connect_activate(move |_, _| {
+        let dialog = adw::AboutDialog::builder()
+            .application_name("Chord")
+            .application_icon("chord-icon-mark")
+            .version(env!("CARGO_PKG_VERSION"))
+            .comments(tr(
+                "Terminal emulator for the Lyra Enterprise Linux ecosystem.",
+            ))
+            .developers(["Rodrigo Brito <rodrigo@w3ti.com.br>"])
+            .copyright("© 2026 Rodrigo Brito")
+            .license_type(gtk4::License::Gpl30)
+            .build();
+        dialog.present(Some(&window_for_about));
+    });
+    window.add_action(&about_action);
 }
 
 fn wire_search(state: &WindowState) {
@@ -184,16 +234,22 @@ fn track_focus(terminal: &vte4::Terminal, state: &WindowState) {
         *focused.borrow_mut() = Some(terminal_for_focus.clone());
     });
     terminal.add_controller(controller);
+
+    let app = state.app.clone();
+    terminal.connect_child_exited(move |_, _| {
+        app.quit();
+    });
 }
 
 fn add_tab(state: &WindowState) {
     let profile = state
         .config
+        .borrow()
         .profiles
         .first()
         .cloned()
         .unwrap_or_default();
-    let pane = TerminalPane::new(&profile, &state.theme);
+    let pane = TerminalPane::new(&profile, &state.theme, &state.config.borrow());
     track_focus(&pane.terminal, state);
 
     let (label, close_button) = tab_bar::build_tab_label(&profile.name);
@@ -235,11 +291,12 @@ fn split_focused(state: &WindowState, orientation: gtk4::Orientation) {
 
     let profile = state
         .config
+        .borrow()
         .profiles
         .first()
         .cloned()
         .unwrap_or_default();
-    let new_pane = TerminalPane::new(&profile, &state.theme);
+    let new_pane = TerminalPane::new(&profile, &state.theme, &state.config.borrow());
     track_focus(&new_pane.terminal, state);
 
     if let Some(notebook) = container.clone().downcast::<gtk4::Notebook>().ok() {

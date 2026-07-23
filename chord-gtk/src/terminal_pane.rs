@@ -4,6 +4,7 @@
 
 use chord_core::profile::ShellProfile;
 use chord_core::theme::{Color, Theme};
+use chord_core::Config;
 use vte4::prelude::*;
 
 /// A single terminal, plus the scrollable container that actually gets placed into a
@@ -14,11 +15,11 @@ pub struct TerminalPane {
 }
 
 impl TerminalPane {
-    pub fn new(profile: &ShellProfile, theme: &Theme) -> Self {
+    pub fn new(profile: &ShellProfile, theme: &Theme, config: &Config) -> Self {
         let terminal = vte4::Terminal::new();
         terminal.set_scrollback_lines(10_000);
         terminal.set_bold_is_bright(true);
-        apply_theme(&terminal, theme);
+        apply_config(&terminal, theme, config);
         spawn_shell(&terminal, profile);
 
         let root = gtk4::ScrolledWindow::builder()
@@ -32,14 +33,21 @@ impl TerminalPane {
     }
 }
 
+/// Applies the user-configurable visual settings on top of the selected theme.
+pub fn apply_config(terminal: &vte4::Terminal, theme: &Theme, config: &Config) {
+    let mut configured_theme = theme.clone();
+    configured_theme.background_opacity_percent = config.background_opacity_percent;
+    configured_theme.cursor_blink = config.cursor_blink;
+    apply_theme(terminal, &configured_theme);
+
+    let font =
+        gtk4::pango::FontDescription::from_string(&format!("{} {}", config.font, config.font_size));
+    terminal.set_font(Some(&font));
+}
+
 fn to_rgba(color: &Color, alpha: f32) -> gtk4::gdk::RGBA {
     let (r, g, b) = color.to_rgb8().unwrap_or((0, 0, 0));
-    gtk4::gdk::RGBA::new(
-        r as f32 / 255.0,
-        g as f32 / 255.0,
-        b as f32 / 255.0,
-        alpha,
-    )
+    gtk4::gdk::RGBA::new(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, alpha)
 }
 
 /// Applies every color and cursor setting from `theme` to `terminal`. The single place

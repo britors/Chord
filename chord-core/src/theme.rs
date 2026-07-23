@@ -38,7 +38,11 @@ impl Color {
             }
             3 => {
                 let expand = |c: &str| u8::from_str_radix(&c.repeat(2), 16).ok();
-                Some((expand(&hex[0..1])?, expand(&hex[1..2])?, expand(&hex[2..3])?))
+                Some((
+                    expand(&hex[0..1])?,
+                    expand(&hex[1..2])?,
+                    expand(&hex[2..3])?,
+                ))
             }
             _ => None,
         }
@@ -64,6 +68,36 @@ pub struct AnsiPalette {
     pub bright_magenta: Color,
     pub bright_cyan: Color,
     pub bright_white: Color,
+}
+
+/// Branding colors supplied by `lyra-branding`'s `palette.json`.
+///
+/// The file is embedded at compile time so every frontend receives exactly the same
+/// values through `chord-core`, without maintaining a second hardcoded palette.
+#[derive(Debug, Deserialize)]
+struct BrandingPalette {
+    #[serde(rename = "lyra-slate")]
+    slate: Color,
+    #[serde(rename = "lyra-slate-alt")]
+    slate_alt: Color,
+    #[serde(rename = "lyra-mist")]
+    mist: Color,
+    #[serde(rename = "lyra-haze")]
+    haze: Color,
+    #[serde(rename = "lyra-fog")]
+    fog: Color,
+    #[serde(rename = "lyra-fog-alt")]
+    fog_alt: Color,
+    #[serde(rename = "lyra-lavender")]
+    lavender: Color,
+    #[serde(rename = "lyra-star")]
+    star: Color,
+    ansi: AnsiPalette,
+}
+
+fn branding_palette() -> BrandingPalette {
+    serde_json::from_str(include_str!("../../data/palette.json"))
+        .expect("the embedded Lyra palette.json must be valid")
 }
 
 impl AnsiPalette {
@@ -109,43 +143,29 @@ pub struct Theme {
 }
 
 impl Theme {
-    /// The built-in "Chord Dark" theme, built from the `lyra-*` tokens named in
-    /// PROMPT-CHORD.md §3.2 (background/foreground/cursor/selection).
-    ///
-    /// The 16 ANSI colors are not specified by name in that table — they are meant to
-    /// come from the shared `palette.json` referenced by PROMPT-LYRA-IDENTIDADE.md,
-    /// which was not available when this crate was scaffolded. The values below are a
-    /// provisional palette in the same night/neon hue family; replace them with the
-    /// real `palette.json`-derived values once that document is available, without
-    /// touching any frontend code.
+    /// The built-in "Chord Dark" theme, derived exclusively from the embedded
+    /// `lyra-branding` `palette.json`.
     pub fn chord_dark() -> Self {
+        let palette = branding_palette();
+        // Keep light-mode tokens parsed and validated even though Chord Light is
+        // outside the v1 scope.
+        let _light_tokens = (
+            &palette.fog,
+            &palette.fog_alt,
+            &palette.lavender,
+            &palette.haze,
+            &palette.slate_alt,
+        );
         Self {
             name: "Chord Dark".to_string(),
-            background: Color::new("#16191D"), // lyra-night
-            foreground: Color::new("#E8ECFF"),  // lyra-star
-            cursor: Color::new("#A78BFA"),      // lyra-neon
+            background: palette.slate,
+            foreground: palette.star,
+            cursor: palette.mist.clone(),
             cursor_blink: true,
-            selection: Color::new("#2D5BE3"), // lyra-sapphire
+            selection: palette.mist,
             selection_opacity_percent: 40,
-            background_opacity_percent: 100,
-            ansi: AnsiPalette {
-                black: Color::new("#1A1A2E"),
-                red: Color::new("#FF5C8A"),
-                green: Color::new("#4ADE80"),
-                yellow: Color::new("#FBBF24"),
-                blue: Color::new("#2D5BE3"),
-                magenta: Color::new("#A78BFA"),
-                cyan: Color::new("#38BDF8"),
-                white: Color::new("#E8ECFF"),
-                bright_black: Color::new("#4B4B6B"),
-                bright_red: Color::new("#FF7FA3"),
-                bright_green: Color::new("#6EE7A0"),
-                bright_yellow: Color::new("#FCD34D"),
-                bright_blue: Color::new("#5B7FFF"),
-                bright_magenta: Color::new("#C4B5FD"),
-                bright_cyan: Color::new("#7DD3FC"),
-                bright_white: Color::new("#FFFFFF"),
-            },
+            background_opacity_percent: 95,
+            ansi: palette.ansi,
         }
     }
 
@@ -219,6 +239,32 @@ impl Theme {
 mod tests {
     use super::*;
 
+    fn relative_luminance(color: &Color) -> f64 {
+        let (r, g, b) = color.to_rgb8().unwrap();
+        let linear = |component: u8| {
+            let value = component as f64 / 255.0;
+            if value <= 0.04045 {
+                value / 12.92
+            } else {
+                ((value + 0.055) / 1.055).powf(2.4)
+            }
+        };
+        0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b)
+    }
+
+    fn contrast_ratio(a: &Color, b: &Color) -> f64 {
+        let (lighter, darker) = {
+            let a = relative_luminance(a);
+            let b = relative_luminance(b);
+            if a > b {
+                (a, b)
+            } else {
+                (b, a)
+            }
+        };
+        (lighter + 0.05) / (darker + 0.05)
+    }
+
     #[test]
     fn color_hex_parsing() {
         assert_eq!(Color::new("#0D0D1F").to_rgb8(), Some((0x0D, 0x0D, 0x1F)));
@@ -232,6 +278,22 @@ mod tests {
         let json = theme.to_json_string_pretty().unwrap();
         let parsed: Theme = serde_json::from_str(&json).unwrap();
         assert_eq!(theme, parsed);
+    }
+
+    #[test]
+    fn chord_dark_uses_enterprise_branding_tokens() {
+        let theme = Theme::chord_dark();
+        assert_eq!(theme.background, Color::new("#16191D"));
+        assert_eq!(theme.foreground, Color::new("#E8ECFF"));
+        assert_eq!(theme.cursor, Color::new("#262B3D"));
+        assert_eq!(theme.selection, Color::new("#262B3D"));
+        assert_eq!(theme.background_opacity_percent, 95);
+    }
+
+    #[test]
+    fn chord_dark_text_passes_wcag_aa() {
+        let theme = Theme::chord_dark();
+        assert!(contrast_ratio(&theme.foreground, &theme.background) >= 4.5);
     }
 
     #[test]
