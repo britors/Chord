@@ -5,7 +5,7 @@
 #
 
 Name:           chord
-Version:        0.1.0
+Version:        1.0.0
 Release:        0
 Summary:        Emulador de terminal do Lyra Enterprise Linux
 License:        GPL-3.0-or-later

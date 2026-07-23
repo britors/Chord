@@ -41,7 +41,9 @@ struct WindowState {
     config: Rc<RefCell<Config>>,
     focused: Rc<RefCell<Option<vte4::Terminal>>>,
     focused_shell_pid: Rc<RefCell<Option<Rc<Cell<Option<i32>>>>>>,
+    terminals: Rc<RefCell<Vec<(vte4::Terminal, Rc<Cell<Option<i32>>>)>>>,
     closing_tab: Rc<Cell<bool>>,
+    closing_window: Rc<Cell<bool>>,
 }
 
 pub fn build_window(app: &adw::Application, config: &Config) -> adw::ApplicationWindow {
@@ -69,7 +71,9 @@ pub fn build_window(app: &adw::Application, config: &Config) -> adw::Application
         config,
         focused: Rc::new(RefCell::new(None)),
         focused_shell_pid: Rc::new(RefCell::new(None)),
+        terminals: Rc::new(RefCell::new(Vec::new())),
         closing_tab: Rc::new(Cell::new(false)),
+        closing_window: Rc::new(Cell::new(false)),
     };
 
     notebook.connect_switch_page(|_, page, _| {
@@ -116,11 +120,45 @@ pub fn build_window(app: &adw::Application, config: &Config) -> adw::Application
 
     install_actions(&window, &state);
     wire_search(&state);
+    wire_close_request(&window, &state);
 
     add_tab(&state);
 
     window.present();
     window
+}
+
+fn wire_close_request(window: &adw::ApplicationWindow, state: &WindowState) {
+    let state = state.clone();
+    window.connect_close_request(move |window| {
+        if state.closing_window.get() || !window_has_running_commands(&state) {
+            return gtk4::glib::Propagation::Proceed;
+        }
+
+        let dialog = adw::AlertDialog::new(
+            Some(&tr("Close Chord?")),
+            Some(&tr(
+                "One or more commands are still running. Closing the window will stop them.",
+            )),
+        );
+        dialog.add_response("cancel", &tr("Cancel"));
+        dialog.add_response("close", &tr("Close window"));
+        dialog.set_close_response("cancel");
+        dialog.set_default_response(Some("cancel"));
+        dialog.set_response_appearance("close", adw::ResponseAppearance::Destructive);
+
+        let window_for_response = window.clone();
+        let closing_window = state.closing_window.clone();
+        dialog.connect_response(None, move |_, response| {
+            if response == "close" {
+                closing_window.set(true);
+                window_for_response.close();
+            }
+        });
+        dialog.present(Some(window));
+
+        gtk4::glib::Propagation::Stop
+    });
 }
 
 fn install_actions(window: &adw::ApplicationWindow, state: &WindowState) {
@@ -267,6 +305,11 @@ fn find_terminal(widget: &gtk4::Widget) -> Option<vte4::Terminal> {
 /// Tracks focus-enter on `terminal` so window-level actions (copy, split, search, zoom)
 /// always apply to whichever pane the user last interacted with.
 fn track_focus(terminal: &vte4::Terminal, shell_pid: Rc<Cell<Option<i32>>>, state: &WindowState) {
+    state
+        .terminals
+        .borrow_mut()
+        .push((terminal.clone(), shell_pid.clone()));
+
     let controller = gtk4::EventControllerFocus::new();
     let terminal_for_focus = terminal.clone();
     let focused = state.focused.clone();
@@ -279,6 +322,11 @@ fn track_focus(terminal: &vte4::Terminal, shell_pid: Rc<Cell<Option<i32>>>, stat
 
     let state = state.clone();
     terminal.connect_child_exited(move |terminal, _| {
+        state
+            .terminals
+            .borrow_mut()
+            .retain(|(candidate, _)| candidate != terminal);
+
         if state.closing_tab.replace(true) {
             return;
         }
@@ -389,6 +437,22 @@ fn foreground_command_is_running(state: &WindowState) -> bool {
     else {
         return false;
     };
+    command_is_running(&terminal, shell_pid)
+}
+
+fn window_has_running_commands(state: &WindowState) -> bool {
+    state
+        .terminals
+        .borrow()
+        .iter()
+        .any(|(terminal, shell_pid)| {
+            shell_pid
+                .get()
+                .is_some_and(|shell_pid| command_is_running(terminal, shell_pid))
+        })
+}
+
+fn command_is_running(terminal: &vte4::Terminal, shell_pid: i32) -> bool {
     let Some(pty) = terminal.pty() else {
         return false;
     };
