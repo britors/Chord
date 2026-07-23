@@ -121,10 +121,10 @@ fn install_actions(window: &adw::ApplicationWindow, state: &WindowState) {
         close_current_tab(s)
     }));
     window.add_action(&action("next-tab", state.clone(), |s| {
-        s.notebook.next_page()
+        select_relative_tab(s, 1)
     }));
     window.add_action(&action("prev-tab", state.clone(), |s| {
-        s.notebook.prev_page()
+        select_relative_tab(s, -1)
     }));
     window.add_action(&action("split-horizontal", state.clone(), |s| {
         split_focused(s, gtk4::Orientation::Horizontal)
@@ -222,6 +222,17 @@ fn zoom(state: &WindowState, factor: f64) {
         let scale = (terminal.font_scale() * factor).clamp(0.25, 4.0);
         terminal.set_font_scale(scale);
     }
+}
+
+fn select_relative_tab(state: &WindowState, offset: i32) {
+    let page_count = state.notebook.n_pages();
+    if page_count < 2 {
+        return;
+    }
+
+    let current = state.notebook.current_page().unwrap_or(0) as i32;
+    let target = (current + offset).rem_euclid(page_count as i32) as u32;
+    state.notebook.set_current_page(Some(target));
 }
 
 /// Tracks focus-enter on `terminal` so window-level actions (copy, split, search, zoom)
