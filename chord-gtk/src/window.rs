@@ -67,6 +67,15 @@ pub fn build_window(app: &adw::Application, config: &Config) -> adw::Application
         focused: Rc::new(RefCell::new(None)),
     };
 
+    notebook.connect_switch_page(|_, page, _| {
+        let page = page.clone();
+        gtk4::glib::idle_add_local_once(move || {
+            if let Some(terminal) = find_terminal(&page) {
+                terminal.grab_focus();
+            }
+        });
+    });
+
     // Standard GNOME/libadwaita window chrome (same pattern as Vega): an
     // `AdwHeaderBar` stacked above the content in a plain box, set as the
     // window's `content` rather than via `set_titlebar`. This gives the
@@ -233,6 +242,21 @@ fn select_relative_tab(state: &WindowState, offset: i32) {
     let current = state.notebook.current_page().unwrap_or(0) as i32;
     let target = (current + offset).rem_euclid(page_count as i32) as u32;
     state.notebook.set_current_page(Some(target));
+}
+
+fn find_terminal(widget: &gtk4::Widget) -> Option<vte4::Terminal> {
+    if let Some(terminal) = widget.downcast_ref::<vte4::Terminal>() {
+        return Some(terminal.clone());
+    }
+
+    let mut child = widget.first_child();
+    while let Some(widget) = child {
+        if let Some(terminal) = find_terminal(&widget) {
+            return Some(terminal);
+        }
+        child = widget.next_sibling();
+    }
+    None
 }
 
 /// Tracks focus-enter on `terminal` so window-level actions (copy, split, search, zoom)
