@@ -1,6 +1,6 @@
 //! The Chord window: tabs, splits, and the v1 shortcuts (PROMPT-CHORD.md §3.1).
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use adw::prelude::*;
@@ -39,6 +39,7 @@ struct WindowState {
     theme: Rc<Theme>,
     config: Rc<RefCell<Config>>,
     focused: Rc<RefCell<Option<vte4::Terminal>>>,
+    closing_tab: Rc<Cell<bool>>,
 }
 
 pub fn build_window(app: &adw::Application, config: &Config) -> adw::ApplicationWindow {
@@ -65,6 +66,7 @@ pub fn build_window(app: &adw::Application, config: &Config) -> adw::Application
         theme,
         config,
         focused: Rc::new(RefCell::new(None)),
+        closing_tab: Rc::new(Cell::new(false)),
     };
 
     notebook.connect_switch_page(|_, page, _| {
@@ -270,10 +272,38 @@ fn track_focus(terminal: &vte4::Terminal, state: &WindowState) {
     });
     terminal.add_controller(controller);
 
-    let app = state.app.clone();
-    terminal.connect_child_exited(move |_, _| {
-        app.quit();
+    let state = state.clone();
+    terminal.connect_child_exited(move |terminal, _| {
+        if state.closing_tab.replace(true) {
+            return;
+        }
+
+        if state.notebook.n_pages() > 1 {
+            if let Some(page) = notebook_page_for(terminal, &state.notebook) {
+                if let Some(page_num) = state.notebook.page_num(&page) {
+                    state.notebook.remove_page(Some(page_num));
+                    let closing_tab = state.closing_tab.clone();
+                    gtk4::glib::idle_add_local_once(move || closing_tab.set(false));
+                    return;
+                }
+            }
+        }
+
+        state.app.quit();
     });
+}
+
+fn notebook_page_for(terminal: &vte4::Terminal, notebook: &gtk4::Notebook) -> Option<gtk4::Widget> {
+    let notebook_widget: &gtk4::Widget = notebook.upcast_ref();
+    let mut child = terminal.clone().upcast::<gtk4::Widget>();
+
+    while let Some(parent) = child.parent() {
+        if &parent == notebook_widget {
+            return Some(child);
+        }
+        child = parent;
+    }
+    None
 }
 
 fn add_tab(state: &WindowState) {
