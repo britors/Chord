@@ -1,82 +1,56 @@
-<svg width="600" height="600" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#1B1B36"/>
-      <stop offset="55%" stop-color="#13132A"/>
-      <stop offset="100%" stop-color="#0D0D1F"/>
+    <linearGradient id="shell" x1="92" y1="72" x2="420" y2="440" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#242445"/>
+      <stop offset="1" stop-color="#101023"/>
     </linearGradient>
-    <linearGradient id="cardCurl" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#C4B5FD"/>
-      <stop offset="100%" stop-color="#6D4FE0"/>
+    <linearGradient id="accent" x1="124" y1="380" x2="388" y2="142" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#69D4FF"/>
+      <stop offset=".52" stop-color="#A78BFA"/>
+      <stop offset="1" stop-color="#7157E8"/>
     </linearGradient>
-    <linearGradient id="fold" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#2A2A4C"/>
-      <stop offset="100%" stop-color="#1B1B36"/>
+    <linearGradient id="rim" x1="106" y1="82" x2="410" y2="430" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7774B8"/>
+      <stop offset=".45" stop-color="#46456F"/>
+      <stop offset="1" stop-color="#2B2A50"/>
     </linearGradient>
-    <linearGradient id="stringGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#7DD3FC"/>
-      <stop offset="45%" stop-color="#A78BFA"/>
-      <stop offset="100%" stop-color="#2D5BE3"/>
-    </linearGradient>
-    <linearGradient id="stringShine" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.85"/>
-      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
-    </linearGradient>
-    <radialGradient id="pluckGlow" cx="50%" cy="35%" r="75%">
-      <stop offset="0%" stop-color="#E8ECFF"/>
-      <stop offset="100%" stop-color="#A78BFA"/>
-    </radialGradient>
-    <filter id="softShadow" x="-40%" y="-40%" width="180%" height="180%">
-      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#A78BFA" flood-opacity="0.35"/>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#080814" flood-opacity=".55"/>
     </filter>
   </defs>
 
-  <!-- Same glyph as the full logo, without the wordmark: recentered and
-       enlarged to read clearly at small taskbar/app-grid sizes. -->
-  <g transform="translate(300,300) scale(1.42) translate(-334,-234)">
-    <g filter="url(#softShadow)">
-      <path d="M198,112
-               Q198,98 212,98
-               L338,98
-               L382,142
-               L382,344
-               Q382,358 368,358
-               L212,358
-               Q198,358 198,344
-               Z"
-            fill="url(#cardGrad)" stroke="#33335C" stroke-width="2"/>
-      <path d="M338,98 L382,142 L350,142 Q338,142 338,130 Z" fill="url(#fold)"/>
+  <!-- A terminal that is also the body of a string instrument. -->
+  <g filter="url(#shadow)">
+    <rect x="72" y="64" width="368" height="384" rx="88" fill="url(#shell)"
+          stroke="url(#rim)" stroke-width="8"/>
+    <path d="M76 164H436" stroke="#36365D" stroke-width="8"/>
 
-      <path d="M198,300
-               C 214,330 214,344 198,358
-               L 236,358
-               C 244,336 244,318 226,300
-               Z"
-            fill="url(#cardCurl)"/>
+    <!-- Window controls echo three notes in a chord. -->
+    <circle cx="126" cy="116" r="12" fill="#69D4FF"/>
+    <circle cx="166" cy="116" r="12" fill="#A78BFA"/>
+    <circle cx="206" cy="116" r="12" fill="#7157E8"/>
 
-      <g fill="#5A5A82">
-        <circle cx="222" cy="120" r="5"/>
-        <circle cx="240" cy="120" r="5"/>
-        <circle cx="258" cy="120" r="5"/>
-      </g>
+    <!-- Terminal prompt, reduced to a strong small-size glyph. -->
+    <path d="M126 210L166 242L126 274" fill="none" stroke="#F1F0FF"
+          stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M190 274H250" stroke="#F1F0FF" stroke-width="20" stroke-linecap="round"/>
 
-      <g fill="#E8ECFF">
-        <path d="M228,180 L248,192 L228,204 Z"/>
-        <rect x="258" y="182" width="60" height="10" rx="2"/>
-        <rect x="228" y="210" width="22" height="14" rx="2"/>
-      </g>
+    <!-- Three strings run through the terminal; their waves form one chord. -->
+    <path d="M292 186V382" stroke="#343457" stroke-width="22" stroke-linecap="round"/>
+    <path d="M340 186V382" stroke="#343457" stroke-width="22" stroke-linecap="round"/>
+    <path d="M388 186V382" stroke="#343457" stroke-width="22" stroke-linecap="round"/>
 
-      <g transform="rotate(-14 400 300)">
-        <rect x="352" y="272" width="20" height="96" rx="10" fill="url(#stringGrad)"/>
-        <rect x="394" y="226" width="20" height="142" rx="10" fill="url(#stringGrad)"/>
-        <rect x="436" y="172" width="20" height="196" rx="10" fill="url(#stringGrad)"/>
-        <rect x="352" y="272" width="7" height="96" rx="3.5" fill="url(#stringShine)"/>
-        <rect x="394" y="226" width="7" height="142" rx="3.5" fill="url(#stringShine)"/>
-        <rect x="436" y="172" width="7" height="196" rx="3.5" fill="url(#stringShine)"/>
-        <circle cx="362" cy="372" r="8" fill="url(#pluckGlow)"/>
-        <circle cx="404" cy="372" r="8" fill="url(#pluckGlow)"/>
-        <circle cx="446" cy="372" r="8" fill="url(#pluckGlow)"/>
-      </g>
-    </g>
+    <path d="M292 186C258 224 326 270 292 318C276 340 278 362 292 382"
+          fill="none" stroke="url(#accent)" stroke-width="12" stroke-linecap="round"/>
+    <path d="M340 186C306 222 374 260 340 300C306 340 374 360 340 382"
+          fill="none" stroke="url(#accent)" stroke-width="12" stroke-linecap="round"/>
+    <path d="M388 186C354 216 422 246 388 278C354 310 422 346 388 382"
+          fill="none" stroke="url(#accent)" stroke-width="12" stroke-linecap="round"/>
+
+    <!-- Bridge / common baseline: separate strings resolve together. -->
+    <rect x="270" y="378" width="140" height="20" rx="10" fill="#ECEAFF"/>
+    <circle cx="292" cy="388" r="6" fill="#7157E8"/>
+    <circle cx="340" cy="388" r="6" fill="#7157E8"/>
+    <circle cx="388" cy="388" r="6" fill="#7157E8"/>
   </g>
 </svg>
