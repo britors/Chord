@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Chord
+Comment=Terminal emulator for Lyra Enterprise Linux
+Exec=chord-gtk
+Icon=chord-icon-mark
+Terminal=false
+Categories=System;TerminalEmulator;
+Keywords=terminal;shell;command;prompt;
+StartupNotify=true
+StartupWMClass=org.lyraos.Chord
