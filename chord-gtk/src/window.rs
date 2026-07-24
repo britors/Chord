@@ -97,8 +97,12 @@ pub fn build_window(app: &adw::Application, config: &Config) -> adw::Application
     header_bar.pack_start(&new_tab_button);
 
     let menu = gtk4::gio::Menu::new();
-    menu.append(Some(&tr("Settings")), Some("win.settings"));
-    menu.append(Some(&tr("About Chord")), Some("win.about"));
+    let settings_section = gtk4::gio::Menu::new();
+    settings_section.append(Some("Configurações"), Some("win.settings"));
+    menu.append_section(None, &settings_section);
+    let about_section = gtk4::gio::Menu::new();
+    about_section.append(Some("Sobre o Chord"), Some("win.about"));
+    menu.append_section(None, &about_section);
     let menu_button = gtk4::MenuButton::builder()
         .icon_name("open-menu-symbolic")
         .tooltip_text(tr("Main menu"))
@@ -228,14 +232,13 @@ fn install_actions(window: &adw::ApplicationWindow, state: &WindowState) {
         let dialog = adw::AboutDialog::builder()
             .application_name("Chord")
             .application_icon("chord-icon-mark")
+            .developer_name("Lyra Enterprise Linux")
             .version(env!("CARGO_PKG_VERSION"))
-            .comments(tr(
-                "Terminal emulator for the Lyra Enterprise Linux ecosystem.",
-            ))
-            .developers(["Rodrigo Brito <rodrigo@w3ti.com.br>"])
-            .copyright("© 2026 Rodrigo Brito")
+            .website("https://github.com/britors/Chord")
+            .issue_url("https://github.com/britors/Chord/issues")
             .license_type(gtk4::License::Gpl30)
             .build();
+        dialog.set_developers(&["Rodrigo Brito"]);
         dialog.present(Some(&window_for_about));
     });
     window.add_action(&about_action);
