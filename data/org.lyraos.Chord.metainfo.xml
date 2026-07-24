@@ -22,6 +22,11 @@
   <url type="homepage">https://github.com/britors/Chord</url>
   <content_rating type="oars-1.1"/>
   <releases>
+    <release version="1.0.1" date="2026-07-24">
+      <description>
+        <p>Ctrl+click opens URLs in the terminal with the default browser.</p>
+      </description>
+    </release>
     <release version="1.0.0" date="2026-07-23">
       <description>
         <p>Initial GTK4 release.</p>
