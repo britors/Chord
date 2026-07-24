@@ -21,6 +21,7 @@ impl TerminalPane {
         terminal.set_scrollback_lines(10_000);
         terminal.set_bold_is_bright(true);
         apply_config(&terminal, theme, config);
+        setup_url_click(&terminal);
         let shell_pid = spawn_shell(&terminal, profile);
 
         let root = gtk4::ScrolledWindow::builder()
@@ -80,6 +81,63 @@ pub fn apply_theme(terminal: &vte4::Terminal, theme: &Theme) {
     } else {
         vte4::CursorBlinkMode::Off
     });
+}
+
+/// URL forms recognized for Ctrl+Click opening: scheme-prefixed links and bare `www.` links,
+/// following the convention set by other VTE-based terminals (gnome-terminal, tilix).
+const URL_REGEXES: &[&str] = &[
+    r#"(?i)\b(?:https?|ftp)://[^\s<>"'`]+[^\s<>"'`.,;:!?)\]}]"#,
+    r#"(?i)\bwww\.[^\s<>"'`]+[^\s<>"'`.,;:!?)\]}]"#,
+];
+
+/// Registers URL matching on `terminal` (pointer cursor on hover) and opens the URL in the
+/// default browser on Ctrl+Click, without claiming the click so normal selection still works.
+fn setup_url_click(terminal: &vte4::Terminal) {
+    let flags = vte4::ffi::VTE_REGEX_FLAGS_DEFAULT as u32;
+    for pattern in URL_REGEXES {
+        match vte4::Regex::for_match(pattern, flags) {
+            Ok(regex) => {
+                let tag = terminal.match_add_regex(&regex, 0);
+                terminal.match_set_cursor_name(tag, "pointer");
+            }
+            Err(err) => eprintln!("chord-gtk: invalid URL regex: {err}"),
+        }
+    }
+
+    let gesture = gtk4::GestureClick::new();
+    gesture.set_button(gtk4::gdk::BUTTON_PRIMARY);
+    let terminal_for_click = terminal.clone();
+    gesture.connect_pressed(move |gesture, _n_press, x, y| {
+        if !gesture
+            .current_event_state()
+            .contains(gtk4::gdk::ModifierType::CONTROL_MASK)
+        {
+            return;
+        }
+        if let (Some(url), _tag) = terminal_for_click.check_match_at(x, y) {
+            open_url(&url);
+        }
+    });
+    terminal.add_controller(gesture);
+}
+
+/// Opens `url` in the user's default browser, prefixing bare `www.` links with `http://`.
+fn open_url(url: &str) {
+    let uri = if url.contains("://") {
+        url.to_string()
+    } else {
+        format!("http://{url}")
+    };
+
+    gtk4::UriLauncher::new(&uri).launch(
+        gtk4::Window::NONE,
+        gtk4::gio::Cancellable::NONE,
+        |result| {
+            if let Err(err) = result {
+                eprintln!("chord-gtk: failed to open URL: {err}");
+            }
+        },
+    );
 }
 
 /// Spawns `profile`'s shell command asynchronously inside `terminal`'s PTY.

@@ -17,5 +17,5 @@ glib = "0.22"
 gio = "0.22"
 gtk4 = { version = "0.11", features = ["v4_18"] }
 adw = { package = "libadwaita", version = "0.9", features = ["v1_5"] }
-vte4 = { version = "0.10", features = ["gtk_v4_18"] }
+vte4 = { version = "0.10", features = ["gtk_v4_18", "v0_80"] }
 libc = "0.2"
